@@ -2,6 +2,7 @@ CREATE TABLE Classes (
     id_class INT PRIMARY KEY,
     type VARCHAR(1024),
     name VARCHAR(1024),
+    confirmed INT,
     link_to_folder_with_materials VARCHAR(1024),
     link_to_record VARCHAR(1024)
 );
@@ -24,14 +25,16 @@ CREATE TABLE Students (
     id_student INT PRIMARY KEY,
     number_of_group INT,
     name VARCHAR(1024),
-    year INT
+    year INT,
+    chat_id VARCHAR(1024)
 );
 
 CREATE TABLE Operators (
     id_operator INT PRIMARY KEY,
     name VARCHAR(1024),
     email VARCHAR(1024),
-    phone_number VARCHAR(1024) 
+    phone_number VARCHAR(1024),
+    chat_id VARCHAR(1024)
 );
 
 CREATE TABLE Deadlines (
@@ -98,3 +101,5 @@ CREATE TABLE Groups_Deadlines (
     FOREIGN KEY (id_deadline) REFERENCES Deadlines(id_deadline),
     CONSTRAINT PK_group_dedl PRIMARY KEY (id_group, id_deadline)
 );
+
+
