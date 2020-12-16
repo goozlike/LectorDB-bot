@@ -1,9 +1,15 @@
 from data_handler import SQLighter
+import shelve
+from telebot import types
+
+#with shelve.open('shelve.db') as storage:
+#    print(storage['80271002'])
 
 db = SQLighter('lector.db')
-from telebot import types
-#print(db.register_stud(11111, 'Василий Пупкин', '185')[0][0] == )
-#    print(c)
-
-a = set([1, 2])
-a.pop(3)
+print(db.abort_confirm(80271002))
+print(db.get_query(80271002))
+#print(db.commit(80271002, '1'))
+#print(db.get_query(80271002))
+#print(db.commit(80271002, '1'))
+#print(db.get_query(80271002))
+#

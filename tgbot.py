@@ -10,6 +10,11 @@ from data_handler import SQLighter
 bot = telebot.TeleBot(config.token)
 need_login_student = set()
 need_login_operator = set()
+wait_response_operator = set()
+
+operator_markup = types.ReplyKeyboardMarkup()
+operator_markup.row('/confirm')
+operator_markup.row('/tmt')
 
 @bot.message_handler(commands=['start'])
 def register(message):
@@ -79,12 +84,73 @@ def chech_login_stud(message):
     except:
         bot.send_message(message.chat.id, "напишите: Имя Фамилия группу \nпример: Иван Васин 185\nчтобы начать все заново напишите /start")
 
-@bot.message_handler(func=lambda message: utils.check_user(message.chat.id) == 'need_login_student')
+
+#подтверждение съемки операторами
 @bot.message_handler(commands=['confirm'])
-def send_confirn(message):
+def send_confirm(message):
     status = utils.check_user(message.chat.id) 
     if status == 'op' or status == 'o/p':
-        pass
+        query = SQLighter(config.database_name).get_query(message.chat.id)
+        print(message.chat.id)
+        print(query)
+        if query[0][0] is not None:
+            markup = types.ReplyKeyboardMarkup()
+            markup.row('Буду снимать')
+            markup.row('Не буду снимать')
+            bot.send_message(message.chat.id, query[0][1] + '\n' + query[0][2] + '\n' + query[0][3],  reply_markup=markup)
+            wait_response_operator.add(message.chat.id)
+        else:
+            bot.send_message(message.chat.id, 'Похоже, что ничего не запланирвано.')
+        
+#cброс подтверждений
+@bot.message_handler(commands=['abort'])
+def abort_confirm(message):
+    if message.chat.id in wait_response_operator:
+        wait_response_operator.remove(message.chat.id)
+
+    db = SQLighter(config.database_name)
+    db.abort_confirm(message.chat.id)
+    bot.send_message(message.chat.id, "Успешно",  reply_markup=operator_markup)
+    print(db.get_all_queries(message.chat.id))
+    
+
+ 
+@bot.message_handler(func=lambda message: message.chat.id in wait_response_operator)
+def commit_query(message):
+    if message.text == 'Буду снимать':
+        res = SQLighter(config.database_name).commit(message.chat.id, '1')
+        if res:
+            query = SQLighter(config.database_name).get_query(message.chat.id)
+            if query[0][0] is not None:
+                markup = types.ReplyKeyboardMarkup()
+                markup.row('Буду снимать')
+                markup.row('Не буду снимать')
+                bot.send_message(message.chat.id, query[0][1] + '\n' + query[0][2] + '\n' + query[0][3],  reply_markup=markup)
+                wait_response_operator.add(message.chat.id)
+            else:
+                wait_response_operator.remove(message.chat.id)
+                bot.send_message(message.chat.id, 'Похоже, что ничего не запланирвано.', reply_markup = operator_markup)
+
+        else:
+            wait_response_operator.remove(message.chat.id)
+            bot.send_message(message.chat.id, 'Похоже, что ничего не запланирвано.')
+
+    elif message.text == 'Не буду снимать':
+        res = SQLighter(config.database_name).commit(message.chat.id, '-1')
+        if res:
+            query = SQLighter(config.database_name).get_query(message.chat.id)
+            if query[0][0] is not None:
+                markup = types.ReplyKeyboardMarkup()
+                markup.row('Буду снимать')
+                markup.row('Не буду снимать')
+                bot.send_message(message.chat.id, query[0][1] + '\n' + query[0][2] + '\n' + query[0][3],  reply_markup=markup)
+                wait_response_operator.add(message.chat.id)
+            else:
+                wait_response_operator.remove(message.chat.id)
+                bot.send_message(message.chat.id, 'Похоже, что ничего не запланирвано.', reply_markup = operator_markup)
+        else:
+            wait_response_operator.remove(message.chat.id)
+            bot.send_message(message.chat.id, 'Похоже, что ничего не запланирвано.')
 
 
 #handle student request to week timetable

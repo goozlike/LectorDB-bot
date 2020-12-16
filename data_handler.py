@@ -93,7 +93,6 @@ class SQLighter:
     #тоже самое, но с оператором
     def register_op(self, chat_id, name, email):
         #TODO
-        print(name,email)
         with self.connection:
             self.cursor.execute('''
                     UPDATE Operators SET chat_id = ? 
@@ -106,6 +105,64 @@ class SQLighter:
                     WHERE name = ? 
                     AND email = ?
                     ''', (name, email, )).fetchall()
+
+    def get_all_queries(self, chat_id):
+        with self.connection:
+            return self.cursor.execute(''' 
+                    SELECT DISTINCT Classes.id_class, Classes.confirmed FROM Operators
+
+                    JOIN Classes_Operators ON Operators.id_operator = Classes_Operators.id_operator
+                    JOIN Classes ON Classes_Operators.id_class = Classes.id_class
+
+                    JOIN Classes_Groups ON Classes.id_class = Classes_Groups.id_class
+
+                    WHERE Operators.chat_id = ? 
+                    AND Classes_Groups.start_time >= date("2020-12-20")
+                    AND Classes_Groups.start_time < date("2020-12-20", "+2 day")
+                    ORDER BY Classes_Groups.start_time
+            ''', (chat_id, )).fetchall()
+    
+    def get_query(self, chat_id):
+         with self.connection:
+            return self.cursor.execute(''' 
+                    SELECT DISTINCT Classes.id_class, Classes.name, Classes.type, MIN(Classes_Groups.start_time) FROM Operators
+                    JOIN Classes_Operators ON Operators.id_operator = Classes_Operators.id_operator
+                    JOIN Classes ON Classes_Operators.id_class = Classes.id_class
+
+                    JOIN Classes_Groups ON Classes.id_class = Classes_Groups.id_class
+
+                    WHERE Operators.chat_id = ? 
+                    AND Classes_Groups.start_time >= date("2020-12-20")
+                    AND Classes_Groups.start_time < date("2020-12-20", "+2 day")
+                    AND Classes.confirmed == '0'
+            ''', (chat_id, )).fetchall()
+    
+    #сбросить все отметки на след день
+    def abort_confirm(self, chat_id):
+        all_q = self.get_all_queries(chat_id)
+        for q in all_q:
+            id_class = q[0]
+            self.cursor.execute(''' 
+                    UPDATE Classes SET confirmed = '0'
+                    WHERE id_class = ?
+            ''', (id_class, )).fetchall()
+
+        return True
+    
+    #зафиксировать съемку лекции
+    def commit(self, chat_id, dec):
+        with self.connection:
+            res = self.get_query(chat_id)
+
+            if res[0][0] is None:
+                return False
+            else:
+                commit_id = res[0][0]
+                self.cursor.execute(''' 
+                    UPDATE Classes SET confirmed = ?
+                    WHERE id_class = ?
+                ''', (dec, commit_id, )).fetchall()
+                return True
 
     
     def check(self, chat_id):
@@ -128,9 +185,9 @@ class SQLighter:
 
     #сбросить все отметки данного оператора (== сделать поле confirmed у занятий 0)
     #о подтвержденности лекций на всех занятиях в ближайшие 24ч
-    def abort_confirm(self, chat_id):
-        #TODO
-        pass
+    #def abort_confirm(self, chat_id):
+    #    #TODO
+    #    pass
     
     #во первых проверить должен ли занятие class_id снимать оператор chat_id
     #если все норм то в данном занятии ставим confirmed = decision
