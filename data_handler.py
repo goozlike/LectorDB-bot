@@ -67,14 +67,83 @@ class SQLighter:
             ''', (id_stud, )).fetchall()
 
 
-    #USER REGISTRATION
-    #происходит проверка есть ли такой студент с таким name и group (в будущем можно типа login password)
-    #если есть, то смотрим записан ли там chat_id        если нету то возвращаем -2
-    # если там "-", то тогда записываем туда chat_id
-    #иначе возвращаем False
-    #если успех True
+    #возвращаем chat_id студента по имени и группе
+    def get_stud_chat_id(self, name, group):
+        with self.connection:
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Students
+                    WHERE name = ? 
+                    AND number_of_group = ?
+                    ''', (name, group, )).fetchall()
+
+    #возвращаем существущие chat_id 
+    def get_stud_all_chat_id(self):
+        with self.connection:
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Students
+                    WHERE chat_id != '-' 
+                    ''').fetchall()
+
+
+    #возвращаем chat_id оператора по имени и email
+    def get_op_chat_id(self, name, email):
+        with self.connection:
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Operators
+                    WHERE name = ? 
+                    AND email = ?
+                    ''', (name, email, )).fetchall()
+    
+    #возвращаем существущие chat_id 
+    def get_op_all_chat_id(self):
+        with self.connection:
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Operators
+                    WHERE chat_id != '-' 
+                    ''').fetchall()
+
+
+
+    # USER REGISTRATION
+    # происходит проверка есть ли такой студент с таким name и group (в будущем можно типа login password)
+    # для этого находим значение столбца chat_id студента с таким name и group
+    # если значения нет (такого ученика нет), то возвращается False (0 case)
+    # если есть, то смотрим записно ли в столбце chat_id значение отличное от "-"
+    # если записано и оно неравно chat_id, то возвращаем False (1 case)
+    # если записано и оно равно chat_id, то возвращаем это значение (2 case)
+    # если записано и оно встречается в строке другого ученика, то возвращаем False (3 case)
+    # если "-", то записываем chat_id и возвращаем записанное значение (4 case) 
+
     def register_stud(self, chat_id, name, group):
-        #TODO
+
+        chat_id_in_bd = self.get_stud_chat_id(name, group)
+            
+        if len(chat_id_in_bd) == 0:
+            print("0 case")
+            return False
+
+        chat_id_in_bd = chat_id_in_bd[0][0]
+
+        if chat_id_in_bd != '-' and chat_id_in_bd != str(chat_id):
+            print("1 case")
+            return False
+
+        if chat_id_in_bd != '-':
+            print("2 case")
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Students
+                    WHERE name = ? 
+                    AND number_of_group = ?
+                    ''', (name, group, )).fetchall()
+
+        id_list = self.get_stud_all_chat_id()
+        id_set = set(map(lambda x: x[0], id_list))
+        
+        if str(chat_id) in id_set:
+            print("3 case")
+            return False 
+
+        print("4 case")
         with self.connection:
             self.cursor.execute('''
                     UPDATE Students SET chat_id = ? 
@@ -90,9 +159,37 @@ class SQLighter:
 
 
 
-    #тоже самое, но с оператором
+    #аналогичная регистрация оператора
     def register_op(self, chat_id, name, email):
-        #TODO
+
+        chat_id_in_bd = self.get_op_chat_id(name, email)
+
+        if len(chat_id_in_bd) == 0:
+            print("0 case")
+            return False
+
+        chat_id_in_bd = chat_id_in_bd[0][0]
+
+        if chat_id_in_bd != '-' and chat_id_in_bd != str(chat_id):
+            print("1 case")
+            return False
+
+        if chat_id_in_bd != '-':
+            print("2 case")
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Operators
+                    WHERE name = ? 
+                    AND email = ?
+                    ''', (name, email, )).fetchall()
+
+        id_list = self.get_op_all_chat_id()
+        id_set = set(map(lambda x: x[0], id_list))
+
+        if str(chat_id) in id_set:
+            print("3 case")
+            return False
+
+        print("4 case")
         with self.connection:
             self.cursor.execute('''
                     UPDATE Operators SET chat_id = ? 
@@ -178,11 +275,11 @@ class SQLighter:
 
 
     #OPERATORS CONFIRMATIONS
-    #получить 1 ближайшую неподвержденную лекцию (в ближайшие 24ч) для данного chat_id.
+    #полЫучить 1 ближайшую неподвержденную лекцию (в ближайшие 24ч) для данного chat_id.
     def get_top_class(self, chat_id):
         #TODO
         pass
-
+    
     #сбросить все отметки данного оператора (== сделать поле confirmed у занятий 0)
     #о подтвержденности лекций на всех занятиях в ближайшие 24ч
     #def abort_confirm(self, chat_id):
