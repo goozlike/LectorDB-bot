@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import sqlite3
+import shelve
 
 class SQLighter:
 
@@ -14,7 +15,6 @@ class SQLighter:
         if flag=='bad':
             with self.connection:
 
-                # return self.cursor.execute('SELECT * FROM Classes_Groups WHERE start_time > date("2020-12-20", "+1 day") AND start_time < date("2020-12-20", "+2 day")')
                 return self.cursor.execute('''
                     SELECT * FROM Classes_Groups
                     JOIN Classes ON Classes.id_class = Classes_Groups.id_class
@@ -33,8 +33,8 @@ class SQLighter:
                 ''').fetchall()
 
     
-    #получаем расписание студента id_stud на day_num дней 
-    def get_stud_tmt(self, id_stud, day_num):
+    #получаем расписание юзера chat_id  на day_num дней 
+    def get_stud_tmt(self, chat_id, day_num):
         day_str = "+" + str(day_num) + " day"
         with self.connection:
             return self.cursor.execute('''
@@ -48,11 +48,11 @@ class SQLighter:
                     JOIN Classes_Groups ON Classes_Groups.id_group = Groups.id_group
                     JOIN Classes ON Classes.id_class = Classes_Groups.id_class
 
-                    WHERE Students.id_student = ? 
+                    WHERE Students.chat_id = ? 
                     AND Classes_Groups.start_time >= date("now")
                     AND Classes_Groups.start_time < date("now", ?)
                     ORDER BY Classes_Groups.start_time
-            ''', (id_stud, day_str)).fetchall()
+            ''', (chat_id, day_str)).fetchall()
 
     #получаем группы студента
     def get_stud_groups(self, id_stud):
@@ -66,19 +66,61 @@ class SQLighter:
                 
             ''', (id_stud, )).fetchall()
 
+
+    #USER REGISTRATION
     #происходит проверка есть ли такой студент с таким name и group (в будущем можно типа login password)
     #если есть, то смотрим записан ли там chat_id        если нету то возвращаем -2
     # если там "-", то тогда записываем туда chat_id
-    #иначе возвращаем -1
+    #иначе возвращаем False
+    #если успех True
     def register_stud(self, chat_id, name, group):
         #TODO
-        pass
+        with self.connection:
+            self.cursor.execute('''
+                    UPDATE Students SET chat_id = ? 
+                    WHERE name = ? 
+                    AND number_of_group = ?
+            ''', (chat_id, name, group, ))
+
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Students
+                    WHERE name = ? 
+                    AND number_of_group = ?
+                    ''', (name, group, )).fetchall()
+
+
 
     #тоже самое, но с оператором
     def register_op(self, chat_id, name, email):
         #TODO
-        pass
+        print(name,email)
+        with self.connection:
+            self.cursor.execute('''
+                    UPDATE Operators SET chat_id = ? 
+                    WHERE name = ? 
+                    AND email = ?
+            ''', (chat_id, name, email, ))
 
+            return self.cursor.execute('''
+                    SELECT chat_id FROM Operators
+                    WHERE name = ? 
+                    AND email = ?
+                    ''', (name, email, )).fetchall()
+
+    
+    def check(self, chat_id):
+        #TODO
+        #sql запрос к таблице Students есть ли там такой chat_id
+        #sql запрос к таблице Operators есть ли там такой chat_id
+        #если этот пользователь есть олько в Students  то вернуть 'stud'
+        #если только в Operators  то вернуть 'op'
+        #если и там и там 's/o'
+        #если нигде 'unreg'
+        return 'unreg'
+
+
+
+    #OPERATORS CONFIRMATIONS
     #получить 1 ближайшую неподвержденную лекцию (в ближайшие 24ч) для данного chat_id.
     def get_top_class(self, chat_id):
         #TODO
@@ -89,7 +131,6 @@ class SQLighter:
     def abort_confirm(self, chat_id):
         #TODO
         pass
-
     
     #во первых проверить должен ли занятие class_id снимать оператор chat_id
     #если все норм то в данном занятии ставим confirmed = decision

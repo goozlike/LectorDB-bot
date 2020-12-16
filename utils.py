@@ -3,16 +3,66 @@ import shelve
 from data_handler import SQLighter
 from config import shelve_name, database_name
 from random import shuffle
-def count_rows():
-    """
-    Данный метод считает общее количество строк в базе данных и сохраняет в хранилище.
-    Потом из этого количества будем выбирать музыку.
-    """
-    db = SQLighter(database_name)
-    rowsnum = db.count_rows()
-    with shelve.open(shelve_name) as storage:
-        storage['rows_count'] = rowsnum
 
+
+#REGISTER AND USER STATUS THINGS
+#get user status
+def check_user(chat_id):
+    with shelve.open(shelve_name) as storage:
+        if str(chat_id) in storage:
+            return storage[str(chat_id)]
+        
+        db = SQLighter(database_name)
+        status = db.check(chat_id)
+        storage[str(chat_id)] = status
+        return status
+
+#set user status
+def set_status(chat_id, status):
+    with shelve.open(shelve_name) as storage:
+        storage[str(chat_id)] = status
+
+#register operator
+def reg_operator(chat_id, name, lastname, email):
+    db = SQLighter(database_name)
+    res = db.register_op(chat_id, name + ' ' + lastname, email)
+
+    with shelve.open(shelve_name) as storage:
+        #if registration is done
+        print(res)
+        if len(res) and res[0][0] == str(chat_id):
+            if str(chat_id) in storage:
+                old_status = storage[str(chat_id)]
+                if old_status == 'stud' or old_status == 's/o':
+                    storage[str(chat_id)] = 's/o'
+                else:
+                    storage[str(chat_id)] = 'op'
+                return True
+            else:
+                storage[str(chat_id)] = 'op'
+                return True
+        else:
+            return False
+
+#register as student
+def reg_student(chat_id, name, lastname, group):
+    db = SQLighter(database_name)
+    res = db.register_stud(chat_id, name + ' ' + lastname, group)
+    print(res)
+    with shelve.open(shelve_name) as storage:
+        if len(res) and res[0][0] == str(chat_id):
+            if str(chat_id) in storage:
+                old_status = storage[str(chat_id)]
+                if old_status == 'op' or old_status == 's/o':
+                    storage[str(chat_id)] = 's/o'
+                else:
+                    storage[str(chat_id)] = 'stud'
+                return True
+            else:
+                storage[str(chat_id)] = 'stud'
+                return True
+        else:
+            return False
 
 def get_rows_count():
     """
