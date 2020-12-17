@@ -10,15 +10,18 @@
 Для регистрации клиента в приложении мы должны запросить у него данные, которые помогут идентифицировать нам данного пользователя в таблице со студентами или операторами. В данном случае используем (Имя Фамилии группа/email). И при успешном находе нужной строчки, проверяем есть ли такой chat_id где-то уже в таблице и не записан ли в нужную строчку уже какой-то chat_id. В случае успеха делаем UPDATE в базе и вставляем chat_id пользователя в базу. Чтобы в дальнейшем более удобно обрабатывать запросы данного клиента.
 
 проверка на наличие старого значения в таблице
+
 `SELECT chat_id FROM Operators`
 `WHERE name = ?` 
 `AND email = ?`
 
 проверка что такой чат айди уже был в таблице (повторная регистрация)
+
 `SELECT chat_id FROM Operators`
 `WHERE chat_id = ?`
 
 обновление значения таблицы 
+
 `UPDATE Operators SET chat_id = ?`
 `WHERE name = ? `
 `AND email = ?`
@@ -40,6 +43,7 @@
 `AND Classes.confirmed == '0'`
 
 обновить атрибут confirmed у данной лекии
+
 `UPDATE Classes SET confirmed = ?`
 `WHERE id_class = ?`
 
@@ -50,6 +54,7 @@
 По данной команде оператор получает список занятий, на которые он назначен в качестве оператора.
 
 получить все лекции, которые должен снимать данный оператор на заданное количество дней 
+
 `SELECT DISTINCT Classes.id_class, Classes.name, Classes.type, Classes_Groups.start_time, Claconfirmed FROM Operators`
 `JOIN Classes_Operators ON Operators.id_operator = Classes_Operators.id_operator`
 `JOIN Classes ON Classes_Operators.id_class = Classes.id_cl`
@@ -66,16 +71,19 @@
 
 
 создать новый дедлайн
+
 `INSERT INTO Deadlines VALUES`
 `(?, ?, ?, '-', DATE("now"), ?)`
    
 триггер добавить записи о новом дедлайне в табличку связи дедлайнов и груп
 
 получить все группы у которых идет данное занятие
+
 `SELECT id_group FROM Classes_Groups`
 `WHERE id_class = ?`
 
 вставить нужные значения в Groups_Deadlines
+
 `INSERT INTO Groups_Deadlines VALUES`
 `(?, ?)`
 
