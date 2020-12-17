@@ -105,8 +105,7 @@ def chech_login_stud(message):
         group = data[2]
         if utils.reg_student(message.chat.id, name, lastname, group):
             bot.send_message(message.chat.id, "Успешно", reply_markup=stud_markup)
-            need_login_student.remove(message.chat.id)
-
+            need_login_student.remove(message.chat.id)  
         else:
             bot.send_message(message.chat.id, "Что-то пошло не так. Проверьте еще раз свои данные, если все равно не получается, напишите @goozlike")
     except:
@@ -225,6 +224,7 @@ def set_deadline(message):
 
 
 
+#РАСПИСАНИЯ И СПИСКИ ДЕДЛАЙНОВ
 #student request to week timetable
 @bot.message_handler(commands=['stmt'])
 def student_timetable(message):
@@ -257,7 +257,7 @@ def student_deadlines(message):
         bot.send_message(message.chat.id, 'Кажется нет активны дедалйнов', reply_markup=stud_markup)
 
 
-#handle operator request to week timetable
+#handle operator request to timetable
 @bot.message_handler(commands=['tmt'])
 def student_timetable(message):
     try:

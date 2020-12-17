@@ -96,6 +96,29 @@ class SQLighter:
     def register_stud(self, chat_id, name, group):
         #TODO
         with self.connection:
+            old_v = self.cursor.execute('''
+                    SELECT chat_id FROM Students
+                    WHERE name = ? 
+                    AND number_of_group = ?
+                    ''', (name, group, )).fetchall()
+            
+            if old_v is None or len(old_v) == 0:
+                return []
+            
+            if old_v[0][0] == str(chat_id):
+                return [(str(chat_id),)]
+            elif old_v[0][0] != '-':
+                return []
+            
+            same_cid = self.cursor.execute('''
+                    SELECT chat_id FROM Students
+                    WHERE chat_id = ? 
+                    ''', (chat_id, )).fetchall()
+            
+            if len(same_cid):
+                return []
+            
+
             self.cursor.execute('''
                     UPDATE Students SET chat_id = ? 
                     WHERE name = ? 
@@ -112,8 +135,30 @@ class SQLighter:
 
     #тоже самое, но с оператором
     def register_op(self, chat_id, name, email):
-        #TODO
         with self.connection:
+
+            old_v = self.cursor.execute('''
+                    SELECT chat_id FROM Operators
+                    WHERE name = ? 
+                    AND email = ?
+                    ''', (name, email, )).fetchall()
+            
+            if old_v is None or len(old_v) == 0:
+                return []
+            
+            if old_v[0][0] == str(chat_id):
+                return [(str(chat_id),)]
+            elif old_v[0][0] != '-':
+                return []
+            
+            same_cid = self.cursor.execute('''
+                    SELECT chat_id FROM Operators
+                    WHERE chat_id = ? 
+                    ''', (chat_id, )).fetchall()
+            
+            if len(same_cid):
+                return []
+            
             self.cursor.execute('''
                     UPDATE Operators SET chat_id = ? 
                     WHERE name = ? 
@@ -125,7 +170,7 @@ class SQLighter:
                     WHERE name = ? 
                     AND email = ?
                     ''', (name, email, )).fetchall()
-
+    
 
     #CUPTURE CONFIRM
     def get_all_queries(self, chat_id, days):
