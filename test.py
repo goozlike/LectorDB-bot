@@ -6,8 +6,8 @@ from telebot import types
 #    print(storage['80271002'])
 
 db = SQLighter('lector.db')
-print(db.abort_confirm(80271002))
-print(db.get_query(80271002))
+print(db.stud_tmt(80271002, 7))
+#
 #print(db.commit(80271002, '1'))
 #print(db.get_query(80271002))
 #print(db.commit(80271002, '1'))

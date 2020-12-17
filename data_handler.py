@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import sqlite3
 import shelve
+from hashlib import md5
 
 class SQLighter:
 
@@ -34,12 +35,11 @@ class SQLighter:
 
     
     #получаем расписание юзера chat_id  на day_num дней 
-    def get_stud_tmt(self, chat_id, day_num):
+    def stud_tmt(self, chat_id, day_num):
         day_str = "+" + str(day_num) + " day"
         with self.connection:
             return self.cursor.execute('''
-                
-
+        
                     SELECT Classes.name, Classes.type, Classes_Groups.start_time FROM Students
 
                     JOIN Groups_Students ON Students.id_student = Groups_Students.id_student
@@ -48,11 +48,31 @@ class SQLighter:
                     JOIN Classes_Groups ON Classes_Groups.id_group = Groups.id_group
                     JOIN Classes ON Classes.id_class = Classes_Groups.id_class
 
-                    WHERE Students.chat_id = ? 
-                    AND Classes_Groups.start_time >= date("now")
-                    AND Classes_Groups.start_time < date("now", ?)
+                    WHERE Students.chat_id = ?
+                    AND Classes_Groups.start_time >= date("2020-12-19")
+                    AND Classes_Groups.start_time < date("2020-12-19", ?)
                     ORDER BY Classes_Groups.start_time
             ''', (chat_id, day_str)).fetchall()
+        
+    #получаем дедлайны студента
+    def stud_deadl(self, chat_id, day_num):
+        day_str = "+" + str(day_num) + " day"
+        with self.connection:
+            return self.cursor.execute('''
+                    SELECT Deadlines.name, Deadlines.time_date, Deadlines.link_to_folder_with_tasks FROM Deadlines
+                    JOIN Groups_Deadlines ON Groups_Deadlines.id_deadline = Deadlines.id_deadline
+                    JOIN Groups ON Groups.id_group = Groups_Deadlines.id_group
+
+                    JOIN Groups_Students ON Groups_Students.id_group = Groups.id_group
+                    JOIN Students ON Students.id_student = Groups_Students.id_student
+
+                    WHERE Students.chat_id = ?
+                    AND Deadlines.time_date >= date("2020-12-19")
+                    AND Deadlines.time_date < date("2020-12-19", ?)
+
+                    ORDER BY Deadlines.time_date
+            ''', (chat_id, day_str, )).fetchall()
+        
 
     #получаем группы студента
     def get_stud_groups(self, id_stud):
@@ -106,10 +126,13 @@ class SQLighter:
                     AND email = ?
                     ''', (name, email, )).fetchall()
 
-    def get_all_queries(self, chat_id):
+
+    #CUPTURE CONFIRM
+    def get_all_queries(self, chat_id, days):
+        day_str = "+" + str(days) + " day"
         with self.connection:
             return self.cursor.execute(''' 
-                    SELECT DISTINCT Classes.id_class, Classes.confirmed FROM Operators
+                    SELECT DISTINCT Classes.id_class, Classes.name, Classes.type, Classes_Groups.start_time, Classes.confirmed FROM Operators
 
                     JOIN Classes_Operators ON Operators.id_operator = Classes_Operators.id_operator
                     JOIN Classes ON Classes_Operators.id_class = Classes.id_class
@@ -118,9 +141,9 @@ class SQLighter:
 
                     WHERE Operators.chat_id = ? 
                     AND Classes_Groups.start_time >= date("2020-12-20")
-                    AND Classes_Groups.start_time < date("2020-12-20", "+2 day")
+                    AND Classes_Groups.start_time < date("2020-12-20", ?)
                     ORDER BY Classes_Groups.start_time
-            ''', (chat_id, )).fetchall()
+            ''', (chat_id, day_str, )).fetchall()
     
     def get_query(self, chat_id):
          with self.connection:
@@ -139,7 +162,7 @@ class SQLighter:
     
     #сбросить все отметки на след день
     def abort_confirm(self, chat_id):
-        all_q = self.get_all_queries(chat_id)
+        all_q = self.get_all_queries(chat_id, 2)
         for q in all_q:
             id_class = q[0]
             self.cursor.execute(''' 
@@ -163,6 +186,38 @@ class SQLighter:
                     WHERE id_class = ?
                 ''', (dec, commit_id, )).fetchall()
                 return True
+
+    #SET DEADLINE
+    def set_deadline(self, class_id, chat_id, text, time):
+        with self.connection:
+            op_id = self.cursor.execute(''' 
+                    SELECT id_operator FROM Operators
+                    WHERE chat_id = ?
+                ''', (chat_id, )).fetchall()
+            if op_id and op_id[0][0] is not None:
+                op_id = op_id[0][0]
+            else:
+                return False
+            
+            deadl_id = md5(text.encode()).hexdigest()
+            
+            self.cursor.execute(''' 
+                    INSERT INTO Deadlines VALUES
+                    (?, ?, ?, '-', DATE("now"), ?)
+                ''', (deadl_id, str(time), text, op_id, )).fetchall()
+            groups = self.cursor.execute(''' 
+                    SELECT id_group FROM Classes_Groups
+                    WHERE id_class = ?
+                ''', (class_id, )).fetchall()
+            
+            for g in groups:
+                id_group = g[0]
+                self.cursor.execute(''' 
+                    INSERT INTO Groups_Deadlines VALUES
+                    (?, ?)
+                ''', (id_group, deadl_id, )).fetchall()
+            
+            return True
 
     
     def check(self, chat_id):
