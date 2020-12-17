@@ -29,6 +29,7 @@
 Также командой /abort оператор может сбросить все свои подтверждения и проставить их заново.
 
 получить ближайшую неподтвержденную лекцию для оператора
+
 `SELECT DISTINCT Classes.id_class, Classes.name, Classes.type, MIN(Classes_Groups.start_time) FROM Operators`
 `JOIN Classes_Operators ON Operators.id_operator = Classes_Operators.id_operator`
 `JOIN Classes ON Classes_Operators.id_class = Classes.id_c`
