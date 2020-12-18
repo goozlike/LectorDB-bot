@@ -64,6 +64,7 @@ def reg_student(chat_id, name, lastname, group):
         else:
             return False
 
+
 def get_rows_count():
     """
     Получает из хранилища количество строк в БД

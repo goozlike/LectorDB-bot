@@ -148,6 +148,7 @@ class SQLighter:
             
             if old_v[0][0] == str(chat_id):
                 return [(str(chat_id),)]
+
             elif old_v[0][0] != '-':
                 return []
             
@@ -274,26 +275,6 @@ class SQLighter:
         #если и там и там 's/o'
         #если нигде 'unreg'
         return 'unreg'
-
-
-
-    #OPERATORS CONFIRMATIONS
-    #получить 1 ближайшую неподвержденную лекцию (в ближайшие 24ч) для данного chat_id.
-    def get_top_class(self, chat_id):
-        #TODO
-        pass
-
-    #сбросить все отметки данного оператора (== сделать поле confirmed у занятий 0)
-    #о подтвержденности лекций на всех занятиях в ближайшие 24ч
-    #def abort_confirm(self, chat_id):
-    #    #TODO
-    #    pass
-    
-    #во первых проверить должен ли занятие class_id снимать оператор chat_id
-    #если все норм то в данном занятии ставим confirmed = decision
-    def confirm_class(self, chat_id, class_id, decision):
-        #TODO
-        pass
 
 
     def close(self):
